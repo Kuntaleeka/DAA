@@ -1,0 +1,112 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_NODES 5
+
+// Edge structure
+struct Edge {
+    char src;
+    char dest;
+    int weight;
+};
+
+// Union-Find data structure for cycle detection
+struct UnionFind {
+    int parent[MAX_NODES];
+    int rank[MAX_NODES];
+};
+
+// Initialize Union-Find data structure
+void makeSet(struct UnionFind *uf) {
+    for (int i = 0; i < MAX_NODES; i++) {
+        uf->parent[i] = i;
+        uf->rank[i] = 0;
+    }
+}
+
+// Find operation in Union-Find data structure
+int find(struct UnionFind *uf, int x) {
+    if (uf->parent[x] != x) {
+        uf->parent[x] = find(uf, uf->parent[x]);
+    }
+    return uf->parent[x];
+}
+
+// Union operation in Union-Find data structure
+void unionSet(struct UnionFind *uf, int x, int y) {
+    int rootX = find(uf, x);
+    int rootY = find(uf, y);
+    if (rootX != rootY) {
+        if (uf->rank[rootX] < uf->rank[rootY]) {
+            uf->parent[rootX] = rootY;
+        } else if (uf->rank[rootX] > uf->rank[rootY]) {
+            uf->parent[rootY] = rootX;
+        } else {
+            uf->parent[rootX] = rootY;
+            uf->rank[rootY]++;
+        }
+    }
+}
+
+// Kruskal's algorithm
+void kruskal(struct Edge edges[], int numEdges, struct Edge mst[]) {
+    // Sort edges by weight in non-decreasing order
+    for (int i = 0; i < numEdges - 1; i++) {
+        for (int j = 0; j < numEdges - i - 1; j++) {
+            if (edges[j].weight > edges[j+1].weight) {
+                struct Edge temp = edges[j];
+                edges[j] = edges[j+1];
+                edges[j+1] = temp;
+            }
+        }
+    }
+
+    // Initialize Union-Find data structure
+    struct UnionFind uf;
+    makeSet(&uf);
+
+    // Iterate over sorted edges and add to MST if it does not create a cycle
+    int count = 0;
+    for (int i = 0; i < numEdges && count < MAX_NODES - 1; i++) {
+        char src = edges[i].src;
+        char dest = edges[i].dest;
+        int weight = edges[i].weight;
+        int p1 = src - 'A';
+        int p2 = dest - 'A';
+
+        if (find(&uf, p1) != find(&uf, p2)) {
+            mst[count++] = edges[i];
+            unionSet(&uf, src, dest);
+            printf("%c - %c \t%d\n", src, dest, weight);
+        }
+    }
+}
+
+int main() {
+    // Define graph
+    printf("Kruskal in C \n");
+    struct Edge edges[] = 
+    {
+            {'A', 'B', 2},
+            {'A', 'C', 7},
+            {'A', 'D', 2},
+            {'B', 'D', 5},
+            {'B', 'E', 7},
+            {'C', 'D', 5},
+            {'D', 'E', 4}
+        };
+    int numEdges = sizeof(edges) / sizeof(edges[0]);
+
+
+    // Find MST 
+    struct Edge mst[MAX_NODES - 1];
+    kruskal(edges, numEdges, mst);
+    int totalWeight = 0;
+    for (int i = 0; i < MAX_NODES - 1; i++) {
+        printf("(%d, %d) -> %d\n", mst[i].src, mst[i].dest, mst[i].weight);
+        totalWeight += mst[i].weight;
+    }
+    printf("Total weight of MST: %d\n", totalWeight);
+
+    return 0;
+}
